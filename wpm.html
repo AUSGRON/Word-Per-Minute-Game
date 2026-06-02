@@ -1,0 +1,1210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TypeRacer — Speed Test</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #13131a;
+    --surface2: #18181f;
+    --border: #1e1e2e;
+    --accent: #e8ff47;
+    --accent2: #ff6b6b;
+    --accent3: #6bffb8;
+    --accent4: #6bc8ff;
+    --text: #e8e8f0;
+    --muted: #4a4a6a;
+    --correct: #6bffb8;
+    --wrong: #ff6b6b;
+    --cursor: #e8ff47;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    padding: 32px 24px 60px;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 40% at 20% 20%, rgba(232,255,71,0.04) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 60% at 80% 80%, rgba(107,255,184,0.04) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .page-wrap {
+    position: relative;
+    z-index: 1;
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 28px;
+    align-items: start;
+  }
+
+  /* ── LEFT COLUMN ── */
+  .left-col { min-width: 0; }
+
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 36px;
+  }
+  .logo {
+    font-family: 'Space Mono', monospace;
+    font-size: 1.1rem;
+    font-weight: 700;
+  }
+  .logo span { color: var(--accent); }
+  .badge {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    padding: 4px 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  /* Stats bar */
+  .stats-bar { display: flex; gap: 2px; margin-bottom: 28px; }
+  .stat {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 14px 10px;
+    text-align: center;
+  }
+  .stat:first-child { border-radius: 8px 0 0 8px; }
+  .stat:last-child  { border-radius: 0 8px 8px 0; }
+  .stat-value {
+    font-family: 'Space Mono', monospace;
+    font-size: 1.8rem;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .stat-label {
+    font-size: 0.55rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    margin-top: 5px;
+  }
+  #wpm-val  { color: var(--accent); }
+  #acc-val  { color: var(--accent3); }
+  #time-val { color: var(--text); }
+  #combo-val{ color: var(--accent2); }
+
+  /* Mode bar */
+  .mode-bar { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+  .mode-btn {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    padding: 7px 14px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    transition: all 0.15s;
+    border-radius: 4px;
+  }
+  .mode-btn:hover { color: var(--text); border-color: var(--muted); }
+  .mode-btn.active { background: var(--accent); color: var(--bg); border-color: var(--accent); font-weight: 700; }
+
+  /* Progress */
+  .progress-wrap { background: var(--border); height: 3px; border-radius: 2px; margin-bottom: 20px; overflow: hidden; }
+  .progress-bar  { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent3)); width: 0%; transition: width 0.1s linear; border-radius: 2px; }
+
+  /* Typing card */
+  .typing-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 32px;
+    margin-bottom: 18px;
+    position: relative;
+  }
+  .typing-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba(232,255,71,0.03), transparent 60%);
+    pointer-events: none;
+  }
+  .live-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.55rem;
+    color: var(--accent);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .live-dot { width: 6px; height: 6px; background: var(--accent2); border-radius: 50%; animation: pulse 1s ease infinite; }
+  @keyframes pulse { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.5);opacity:0.5} }
+
+  #prompt-display {
+    font-family: 'Space Mono', monospace;
+    font-size: 1.15rem;
+    line-height: 1.9;
+    letter-spacing: 0.02em;
+    word-break: break-word;
+    min-height: 80px;
+    user-select: none;
+  }
+  .char { position: relative; transition: color 0.06s; }
+  .char.correct { color: var(--correct); }
+  .char.wrong   { color: var(--wrong); background: rgba(255,107,107,0.12); border-radius: 2px; }
+  .char.pending { color: var(--muted); }
+  .char.cursor::after {
+    content: '';
+    position: absolute;
+    left: 0; bottom: 0;
+    width: 100%; height: 2px;
+    background: var(--cursor);
+    animation: blink 0.8s ease infinite;
+    border-radius: 1px;
+  }
+  @keyframes blink { 0%,50%{opacity:1} 51%,100%{opacity:0} }
+
+  .input-area { margin-top: 24px; }
+  #typing-input {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 1rem;
+    padding: 14px 18px;
+    outline: none;
+    caret-color: var(--accent);
+    transition: border-color 0.2s, box-shadow 0.2s;
+    resize: none;
+    height: 56px;
+  }
+  #typing-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(232,255,71,0.08); }
+  #typing-input:disabled { opacity: 0.4; cursor: not-allowed; }
+  .input-hint { font-family: 'Space Mono', monospace; font-size: 0.6rem; color: var(--muted); text-align: center; margin-top: 8px; letter-spacing: 0.08em; }
+
+  /* Controls */
+  .controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .btn-primary {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 13px 28px;
+    background: var(--accent);
+    color: var(--bg);
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(232,255,71,0.25); }
+  .btn-primary:active { transform: translateY(0); }
+  .btn-ghost {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 13px 18px;
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-ghost:hover { color: var(--text); border-color: var(--muted); }
+  .btn-danger {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 8px 14px;
+    background: transparent;
+    color: var(--accent2);
+    border: 1px solid rgba(255,107,107,0.3);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-danger:hover { background: rgba(255,107,107,0.1); border-color: var(--accent2); }
+
+  /* Shake animation */
+  .shake { animation: shake 0.3s ease; }
+  @keyframes shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-6px)} 40%{transform:translateX(6px)} 60%{transform:translateX(-4px)} 80%{transform:translateX(4px)} }
+
+  /* Combo flash */
+  .combo-flash {
+    position: fixed; top: 50%; left: 50%;
+    transform: translate(-50%,-50%);
+    font-family: 'Space Mono', monospace;
+    font-size: 3rem; font-weight: 700;
+    color: var(--accent);
+    pointer-events: none; opacity: 0; z-index: 200;
+    text-shadow: 0 0 40px var(--accent);
+  }
+  .combo-flash.show { animation: comboAnim 0.7s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+  @keyframes comboAnim {
+    0%  { opacity:1; transform:translate(-50%,-50%) scale(0.5); }
+    50% { opacity:1; transform:translate(-50%,-60%) scale(1.1); }
+    100%{ opacity:0; transform:translate(-50%,-80%) scale(0.9); }
+  }
+
+  /* ── RIGHT COLUMN — HISTORY PANEL ── */
+  .history-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    position: sticky;
+    top: 24px;
+  }
+
+  .history-panel-header {
+    padding: 18px 20px 14px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--surface2);
+  }
+  .history-panel-title {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .history-count-badge {
+    background: var(--accent);
+    color: var(--bg);
+    font-size: 0.55rem;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 100px;
+    letter-spacing: 0;
+  }
+
+  /* Summary row */
+  .history-summary {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    border-bottom: 1px solid var(--border);
+  }
+  .hs-item {
+    padding: 14px 12px;
+    text-align: center;
+    border-right: 1px solid var(--border);
+  }
+  .hs-item:last-child { border-right: none; }
+  .hs-val {
+    font-family: 'Space Mono', monospace;
+    font-size: 1.3rem;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .hs-label {
+    font-size: 0.5rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+
+  /* Sparkline */
+  .sparkline-wrap {
+    padding: 14px 20px 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .sparkline-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.52rem;
+    color: var(--muted);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  #sparkline-canvas { width: 100%; height: 56px; display: block; }
+
+  /* Tabs */
+  .history-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+  }
+  .h-tab {
+    flex: 1;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.55rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 10px 6px;
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s;
+  }
+  .h-tab:hover { color: var(--text); }
+  .h-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* Attempts list */
+  .history-list-wrap {
+    max-height: 420px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+  .history-list-wrap::-webkit-scrollbar { width: 4px; }
+  .history-list-wrap::-webkit-scrollbar-track { background: transparent; }
+  .history-list-wrap::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .attempt-item {
+    display: grid;
+    grid-template-columns: 28px 1fr auto;
+    gap: 10px;
+    align-items: center;
+    padding: 13px 18px;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+    animation: slideIn 0.3s ease;
+  }
+  .attempt-item:last-child { border-bottom: none; }
+  .attempt-item:hover { background: rgba(255,255,255,0.02); }
+  @keyframes slideIn { from{opacity:0;transform:translateX(10px)} to{opacity:1;transform:translateX(0)} }
+
+  .attempt-num {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.55rem;
+    color: var(--muted);
+    text-align: center;
+  }
+
+  .attempt-body { min-width: 0; }
+  .attempt-top {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+  .attempt-wpm {
+    font-family: 'Space Mono', monospace;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--accent);
+    line-height: 1;
+  }
+  .attempt-wpm-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.52rem;
+    color: var(--muted);
+  }
+  .pb-tag {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.48rem;
+    background: rgba(232,255,71,0.15);
+    color: var(--accent);
+    border: 1px solid rgba(232,255,71,0.3);
+    padding: 2px 6px;
+    border-radius: 3px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .attempt-meta {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .meta-chip {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.52rem;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 3px;
+  }
+  .meta-chip .dot { width: 4px; height: 4px; border-radius: 50%; }
+
+  .attempt-right { text-align: right; }
+  .attempt-rank {
+    font-size: 0.6rem;
+    white-space: nowrap;
+  }
+  .attempt-date {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.48rem;
+    color: var(--muted);
+    margin-top: 3px;
+  }
+
+  /* No history */
+  .empty-history {
+    padding: 40px 24px;
+    text-align: center;
+  }
+  .empty-icon { font-size: 2rem; margin-bottom: 12px; }
+  .empty-title {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .empty-sub {
+    font-size: 0.65rem;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  /* History footer */
+  .history-footer {
+    padding: 12px 18px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--surface2);
+  }
+  .history-footer-info {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.52rem;
+    color: var(--muted);
+  }
+
+  /* Results modal */
+  .results-overlay {
+    position: fixed; inset: 0;
+    background: rgba(10,10,15,0.9);
+    backdrop-filter: blur(8px);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+  .results-overlay.show { opacity: 1; pointer-events: all; }
+  .results-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 44px;
+    width: 100%;
+    max-width: 520px;
+    transform: translateY(20px);
+    transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+    position: relative;
+    overflow: hidden;
+  }
+  .results-overlay.show .results-card { transform: translateY(0); }
+  .results-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--accent3), var(--accent));
+    background-size: 200% 100%;
+    animation: shimmer 2s linear infinite;
+  }
+  @keyframes shimmer { 0%{background-position:0% 0} 100%{background-position:200% 0} }
+  .results-title { font-family:'Space Mono',monospace; font-size:0.6rem; letter-spacing:0.2em; text-transform:uppercase; color:var(--muted); margin-bottom:24px; }
+  .results-wpm { font-family:'Space Mono',monospace; font-size:4.5rem; font-weight:700; color:var(--accent); line-height:1; margin-bottom:4px; }
+  .results-wpm-label { font-size:0.65rem; color:var(--muted); letter-spacing:0.15em; text-transform:uppercase; font-family:'Space Mono',monospace; margin-bottom:28px; }
+  .results-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:28px; }
+  .result-item { background:var(--bg); border:1px solid var(--border); padding:14px; border-radius:8px; text-align:center; }
+  .result-item-val { font-family:'Space Mono',monospace; font-size:1.3rem; font-weight:700; margin-bottom:3px; }
+  .result-item-label { font-size:0.52rem; color:var(--muted); letter-spacing:0.12em; text-transform:uppercase; }
+  .rank-badge { display:inline-block; padding:5px 18px; border-radius:100px; font-family:'Space Mono',monospace; font-size:0.65rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:28px; }
+  .results-actions { display:flex; gap:10px; }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .page-wrap { grid-template-columns: 1fr; }
+    .history-panel { position: static; }
+    .history-list-wrap { max-height: 320px; }
+  }
+  @media (max-width: 500px) {
+    .results-card { padding: 28px 20px; }
+    .results-wpm { font-size: 3rem; }
+    .results-grid { grid-template-columns: 1fr 1fr; }
+    .stats-bar { flex-wrap: wrap; }
+    .stat { min-width: calc(50% - 1px); }
+  }
+</style>
+</head>
+<body>
+
+<div class="page-wrap">
+
+  <!-- ══════════════ LEFT — GAME ══════════════ -->
+  <div class="left-col">
+    <div class="header">
+      <div class="logo">type<span>.</span>race</div>
+      <div class="badge">wpm tracker v2.0</div>
+    </div>
+
+    <div class="stats-bar">
+      <div class="stat"><div class="stat-value" id="wpm-val">0</div><div class="stat-label">WPM</div></div>
+      <div class="stat"><div class="stat-value" id="acc-val">100%</div><div class="stat-label">Accuracy</div></div>
+      <div class="stat"><div class="stat-value" id="time-val">—</div><div class="stat-label">Time</div></div>
+      <div class="stat"><div class="stat-value" id="combo-val">0</div><div class="stat-label">Streak</div></div>
+    </div>
+
+    <div class="mode-bar">
+      <button class="mode-btn active" onclick="setMode('quotes',this)">Quotes</button>
+      <button class="mode-btn" onclick="setMode('code',this)">Code</button>
+      <button class="mode-btn" onclick="setMode('facts',this)">Fun Facts</button>
+      <button class="mode-btn" onclick="setMode('hard',this)">Hard Mode</button>
+    </div>
+
+    <div class="progress-wrap"><div class="progress-bar" id="progress-bar"></div></div>
+
+    <div class="typing-card">
+      <div class="live-tag"><div class="live-dot"></div>live speed test</div>
+      <div id="prompt-display"></div>
+      <div class="input-area">
+        <textarea id="typing-input" placeholder="Click here and start typing…"
+          autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" rows="1"></textarea>
+        <div class="input-hint">TAB — new text &nbsp;·&nbsp; ESC — reset</div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="btn-primary" onclick="startNewRound()">New Text ↺</button>
+      <button class="btn-ghost"  onclick="resetRound()">Reset</button>
+    </div>
+  </div>
+
+  <!-- ══════════════ RIGHT — HISTORY PANEL ══════════════ -->
+  <div class="history-panel">
+
+    <!-- Header -->
+    <div class="history-panel-header">
+      <div class="history-panel-title">
+        History
+        <span class="history-count-badge" id="h-count">0</span>
+      </div>
+      <button class="btn-danger" onclick="clearHistory()">Clear</button>
+    </div>
+
+    <!-- Summary -->
+    <div class="history-summary">
+      <div class="hs-item">
+        <div class="hs-val" id="hs-best" style="color:var(--accent)">—</div>
+        <div class="hs-label">Best WPM</div>
+      </div>
+      <div class="hs-item">
+        <div class="hs-val" id="hs-avg" style="color:var(--accent3)">—</div>
+        <div class="hs-label">Avg WPM</div>
+      </div>
+      <div class="hs-item">
+        <div class="hs-val" id="hs-tests" style="color:var(--accent4)">0</div>
+        <div class="hs-label">Tests</div>
+      </div>
+    </div>
+
+    <!-- Sparkline -->
+    <div class="sparkline-wrap">
+      <div class="sparkline-label">WPM over last attempts</div>
+      <canvas id="sparkline-canvas" height="56"></canvas>
+    </div>
+
+    <!-- Tabs -->
+    <div class="history-tabs">
+      <button class="h-tab active" onclick="switchTab('all',this)">All</button>
+      <button class="h-tab" onclick="switchTab('quotes',this)">Quotes</button>
+      <button class="h-tab" onclick="switchTab('code',this)">Code</button>
+      <button class="h-tab" onclick="switchTab('facts',this)">Facts</button>
+      <button class="h-tab" onclick="switchTab('hard',this)">Hard</button>
+    </div>
+
+    <!-- List -->
+    <div class="history-list-wrap">
+      <div id="history-list"></div>
+    </div>
+
+    <!-- Footer -->
+    <div class="history-footer">
+      <div class="history-footer-info" id="h-footer-info">Saved permanently in browser</div>
+    </div>
+  </div>
+
+</div><!-- end page-wrap -->
+
+<!-- Combo flash -->
+<div class="combo-flash" id="combo-flash"></div>
+
+<!-- Results modal -->
+<div class="results-overlay" id="results-overlay">
+  <div class="results-card">
+    <div class="results-title">— Test Complete —</div>
+    <div class="results-wpm" id="r-wpm">0</div>
+    <div class="results-wpm-label">words per minute</div>
+    <div class="rank-badge" id="r-rank"></div>
+    <div class="results-grid">
+      <div class="result-item"><div class="result-item-val" id="r-acc" style="color:var(--accent3)">0%</div><div class="result-item-label">Accuracy</div></div>
+      <div class="result-item"><div class="result-item-val" id="r-time">0s</div><div class="result-item-label">Time</div></div>
+      <div class="result-item"><div class="result-item-val" id="r-errors" style="color:var(--accent2)">0</div><div class="result-item-label">Errors</div></div>
+      <div class="result-item"><div class="result-item-val" id="r-chars">0</div><div class="result-item-label">Chars</div></div>
+      <div class="result-item"><div class="result-item-val" id="r-streak" style="color:var(--accent)">0</div><div class="result-item-label">Best Streak</div></div>
+      <div class="result-item"><div class="result-item-val" id="r-best" style="color:var(--accent)">—</div><div class="result-item-label">Personal Best</div></div>
+    </div>
+    <div class="results-actions">
+      <button class="btn-primary" onclick="closeResults();startNewRound()">Next Round →</button>
+      <button class="btn-ghost"  onclick="closeResults();resetRound()">Retry</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════
+// WORD BANKS
+// ════════════════════════════════════════════
+const BANKS = {
+  quotes: [
+    "The only way to do great work is to love what you do. If you haven't found it yet, keep looking.",
+    "In the middle of every difficulty lies opportunity. The measure of intelligence is the ability to change.",
+    "It does not matter how slowly you go as long as you do not stop moving forward.",
+    "Success is not final, failure is not fatal: it is the courage to continue that counts.",
+    "Life is what happens when you're busy making other plans. Enjoy the little things.",
+    "The future belongs to those who believe in the beauty of their dreams and act on them daily.",
+    "Darkness cannot drive out darkness; only light can do that. Hate cannot drive out hate; only love can do that.",
+    "Two roads diverged in a wood, and I took the one less traveled by, and that has made all the difference.",
+    "Ask not what your country can do for you — ask what you can do for your country and for those around you.",
+    "Be the change you wish to see in the world. Small actions compound into massive results over time.",
+    "Whether you think you can, or you think you can't — you're right. Mindset is everything in life.",
+    "Innovation distinguishes between a leader and a follower. Stay hungry, stay foolish, keep building.",
+    "The greatest glory in living lies not in never falling, but in rising every time we fall.",
+    "You only live once, but if you do it right, once is enough. Make every moment meaningful.",
+    "In three words I can sum up everything I've learned about life: it goes on no matter what.",
+    "Many of life's failures are people who did not realize how close they were to success when they gave up.",
+    "Education is the most powerful weapon which you can use to change the world around you.",
+    "An unexamined life is not worth living. Curiosity and reflection are the engines of personal growth.",
+    "Spread love everywhere you go. Let no one ever come to you without leaving happier than before.",
+    "When the going gets tough, the tough get going. Resilience separates winners from those who quit.",
+  ],
+  facts: [
+    "Honey never spoils. Archaeologists have found 3000-year-old honey in Egyptian tombs that was still perfectly edible.",
+    "Octopuses have three hearts, blue blood, and nine brains — one central brain and one in each of their eight arms.",
+    "A day on Venus is longer than a year on Venus because it rotates incredibly slowly on its own axis.",
+    "The Great Wall of China is not visible from space with the naked eye, contrary to the popular myth told worldwide.",
+    "Cleopatra lived closer in time to the Moon landing than to the construction of the Great Pyramid of Giza.",
+    "Bananas are berries by botanical definition, while strawberries are technically not berries at all.",
+    "A group of flamingos is called a flamboyance. A group of crows is called a murder. Nature is dramatic indeed.",
+    "The human nose can detect over one trillion distinct scents. That is far more than previously believed by scientists.",
+    "Lightning strikes the Earth about 100 times per second, which adds up to roughly 8 million times per day.",
+    "Sharks are older than trees. They existed 400 million years ago, while trees appeared around 350 million years ago.",
+    "Water can boil and freeze at the same time under the right conditions — this is called the triple point.",
+    "The average person walks about 100,000 miles in their lifetime, equivalent to circling the Earth four times.",
+    "Wombats are the only animals in the world that produce cube-shaped droppings to mark their territory cleverly.",
+    "A single cloud can weigh over a million pounds due to the density of tiny water droplets suspended within it.",
+    "Oxford University is older than the Aztec Empire. Teaching began there in 1096 and has continued ever since.",
+    "There are more possible chess games than there are atoms in the observable universe. The math is astonishing.",
+    "Cows have best friends and become stressed when separated from them, as multiple studies have shown clearly.",
+    "The word robot comes from the Czech word robota meaning forced labor or drudgery in everyday life.",
+  ],
+  code: [
+    "const sum = arr.reduce((acc, val) => acc + val, 0) / arr.length; return Math.round(sum * 100) / 100;",
+    "function debounce(fn, delay) { let timer; return (...args) => { clearTimeout(timer); timer = setTimeout(() => fn(...args), delay); }; }",
+    "const unique = [...new Set(array)]; const sorted = unique.sort((a, b) => a - b); return sorted;",
+    "async function fetchData(url) { const res = await fetch(url); if (!res.ok) throw new Error(res.status); return res.json(); }",
+    "document.querySelectorAll('.item').forEach((el, i) => { el.style.animationDelay = i * 100 + 'ms'; el.classList.add('visible'); });",
+    "const pipe = (...fns) => x => fns.reduce((v, f) => f(v), x); const transform = pipe(trim, lowercase, sanitize);",
+    "const flatten = arr => arr.reduce((flat, item) => flat.concat(Array.isArray(item) ? flatten(item) : item), []);",
+    "const throttle = (fn, limit) => { let go = true; return function() { if (go) { fn.apply(this, arguments); go = false; setTimeout(() => go = true, limit); } }; };",
+    "const memoize = fn => { const cache = {}; return (...args) => { const key = JSON.stringify(args); return cache[key] ?? (cache[key] = fn(...args)); }; };",
+    "class Stack { constructor() { this.data = []; } push(v) { this.data.push(v); } pop() { return this.data.pop(); } peek() { return this.data.at(-1); } }",
+  ],
+  hard: [
+    "The Byzantine fault-tolerant consensus algorithm requires two-thirds of all nodes to agree before committing a transaction to the distributed ledger.",
+    "Phosphorescent bioluminescence in deep-sea organisms results from luciferin oxidation catalyzed by luciferase enzymes in oxygen-rich microenvironments.",
+    "Cryptographic hash functions exhibit avalanche properties whereby a single-bit change propagates unpredictably across the entire output digest.",
+    "Antidisestablishmentarianism and pneumonoultramicroscopicsilicovolcanoconiosis represent two of the longest non-technical words in the English lexicon.",
+    "The Fibonacci sequence emerges repeatedly in phyllotaxis, nautilus spirals, and galaxy arm formation due to recursive mathematical optimization.",
+    "Electromagnetic hypersensitivity, superconductivity thresholds, and quantum entanglement decoherence remain active research frontiers in condensed matter physics.",
+    "Polyunsaturated fatty acids, particularly eicosapentaenoic and docosahexaenoic acids, play crucial roles in neurological development and inflammatory response modulation.",
+    "The jurisprudence surrounding extraterritorial jurisdiction in cybercrime prosecutions remains extraordinarily complex given overlapping sovereign authority frameworks.",
+    "Synaptic neuroplasticity demonstrates hebbian learning principles: neurons that fire together wire together through long-term potentiation mechanisms.",
+    "Anthropogenic greenhouse gas emissions alter atmospheric radiative forcing, destabilizing thermohaline circulation patterns and accelerating cryosphere degradation worldwide.",
+  ]
+};
+
+// ════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════
+let state = {
+  mode: 'quotes',
+  prompt: '',
+  chars: [],
+  currentIndex: 0,
+  started: false,
+  finished: false,
+  startTime: null,
+  timer: null,
+  errors: 0,
+  combo: 0,
+  bestCombo: 0,
+  lastPrompt: '',
+  history: JSON.parse(localStorage.getItem('typerace_history_v2') || '[]'),
+  activeTab: 'all',
+};
+
+// ════════════════════════════════════════════
+// HELPERS
+// ════════════════════════════════════════════
+function getRank(wpm) {
+  if (wpm >= 120) return { label: '🏆 LEGENDARY', color: '#FFD700' };
+  if (wpm >= 90)  return { label: '⚡ ELITE',      color: '#e8ff47' };
+  if (wpm >= 70)  return { label: '🚀 ADVANCED',   color: '#6bffb8' };
+  if (wpm >= 50)  return { label: '✅ INTERMEDIATE',color: '#6bc8ff' };
+  if (wpm >= 30)  return { label: '📝 BEGINNER',   color: '#c8c8ff' };
+  return           { label: '🐢 KEEP GOING',       color: '#ff6b6b' };
+}
+
+function pickPrompt(mode) {
+  const bank = BANKS[mode];
+  let p;
+  do { p = bank[Math.floor(Math.random() * bank.length)]; } while (p === state.lastPrompt && bank.length > 1);
+  state.lastPrompt = p;
+  return p;
+}
+
+function calcWPM(chars, ms) {
+  const words = chars / 5;
+  const minutes = ms / 60000;
+  return Math.round(words / minutes);
+}
+
+function formatDate(ts) {
+  const d = new Date(ts);
+  const now = new Date();
+  const diff = now - d;
+  if (diff < 60000)      return 'just now';
+  if (diff < 3600000)    return Math.floor(diff/60000) + 'm ago';
+  if (diff < 86400000)   return Math.floor(diff/3600000) + 'h ago';
+  if (diff < 604800000)  return Math.floor(diff/86400000) + 'd ago';
+  return d.toLocaleDateString();
+}
+
+function saveHistory() {
+  localStorage.setItem('typerace_history_v2', JSON.stringify(state.history));
+}
+
+// ════════════════════════════════════════════
+// RENDER GAME
+// ════════════════════════════════════════════
+function renderPrompt() {
+  const el = document.getElementById('prompt-display');
+  el.innerHTML = state.chars.map((c, i) => {
+    let cls = 'char pending';
+    if (i < state.currentIndex) cls = c.wrong ? 'char wrong' : 'char correct';
+    if (i === state.currentIndex && !state.finished) cls += ' cursor';
+    return `<span class="${cls}">${c.ch === ' ' ? '&nbsp;' : c.ch}</span>`;
+  }).join('');
+}
+
+function updateStats() {
+  if (!state.started || !state.startTime) return;
+  const elapsed = Date.now() - state.startTime;
+  const correctChars = state.currentIndex - state.errors;
+  const wpm = elapsed > 500 ? calcWPM(Math.max(0, correctChars), elapsed) : 0;
+  const acc = state.currentIndex > 0 ? Math.round((1 - state.errors / state.currentIndex) * 100) : 100;
+  document.getElementById('wpm-val').textContent   = wpm;
+  document.getElementById('acc-val').textContent   = acc + '%';
+  document.getElementById('time-val').textContent  = (elapsed/1000).toFixed(1) + 's';
+  document.getElementById('combo-val').textContent = state.combo;
+  document.getElementById('progress-bar').style.width = (state.currentIndex / state.chars.length * 100) + '%';
+}
+
+// ════════════════════════════════════════════
+// GAME LOGIC
+// ════════════════════════════════════════════
+function setMode(mode, btn) {
+  state.mode = mode;
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  startNewRound();
+}
+
+function startNewRound() {
+  clearInterval(state.timer);
+  const prompt = pickPrompt(state.mode);
+  state.prompt = prompt;
+  state.chars = prompt.split('').map(ch => ({ ch, wrong: false }));
+  state.currentIndex = 0;
+  state.started = state.finished = false;
+  state.startTime = null;
+  state.errors = state.combo = state.bestCombo = 0;
+  const inp = document.getElementById('typing-input');
+  inp.value = '';
+  inp.disabled = false;
+  inp.focus();
+  document.getElementById('wpm-val').textContent   = '0';
+  document.getElementById('acc-val').textContent   = '100%';
+  document.getElementById('time-val').textContent  = '—';
+  document.getElementById('combo-val').textContent = '0';
+  document.getElementById('progress-bar').style.width = '0%';
+  renderPrompt();
+}
+
+function resetRound() {
+  clearInterval(state.timer);
+  state.currentIndex = 0;
+  state.started = state.finished = false;
+  state.startTime = null;
+  state.errors = state.combo = state.bestCombo = 0;
+  state.chars = state.chars.map(c => ({ ...c, wrong: false }));
+  const inp = document.getElementById('typing-input');
+  inp.value = '';
+  inp.disabled = false;
+  inp.focus();
+  document.getElementById('wpm-val').textContent   = '0';
+  document.getElementById('acc-val').textContent   = '100%';
+  document.getElementById('time-val').textContent  = '—';
+  document.getElementById('combo-val').textContent = '0';
+  document.getElementById('progress-bar').style.width = '0%';
+  renderPrompt();
+}
+
+function finishRound() {
+  state.finished = true;
+  clearInterval(state.timer);
+  const elapsed    = Date.now() - state.startTime;
+  const correctChars = state.chars.filter((c,i) => i < state.currentIndex && !c.wrong).length;
+  const wpm        = calcWPM(correctChars, elapsed);
+  const acc        = state.currentIndex > 0 ? Math.round((1 - state.errors / state.currentIndex) * 100) : 100;
+
+  // Get overall best before saving
+  const allWpms = state.history.map(h => h.wpm);
+  const prevBest = allWpms.length > 0 ? Math.max(...allWpms) : 0;
+  const isNewPB  = wpm > prevBest;
+
+  const entry = {
+    id:       Date.now(),
+    wpm,
+    acc,
+    time:     parseFloat((elapsed/1000).toFixed(1)),
+    errors:   state.errors,
+    chars:    state.currentIndex,
+    streak:   state.bestCombo,
+    mode:     state.mode,
+    rank:     getRank(wpm).label,
+    ts:       Date.now(),
+    isPB:     isNewPB,
+  };
+
+  state.history.unshift(entry);
+  if (state.history.length > 100) state.history.pop();
+  saveHistory();
+
+  document.getElementById('typing-input').disabled = true;
+
+  // Refresh history panel
+  renderHistoryPanel();
+
+  showResults(wpm, acc, elapsed);
+}
+
+// ════════════════════════════════════════════
+// RESULTS MODAL
+// ════════════════════════════════════════════
+function showResults(wpm, acc, elapsed) {
+  const rank = getRank(wpm);
+  const allWpms   = state.history.map(h => h.wpm);
+  const overallBest = Math.max(...allWpms);
+
+  document.getElementById('r-wpm').textContent    = wpm;
+  document.getElementById('r-acc').textContent    = acc + '%';
+  document.getElementById('r-time').textContent   = (elapsed/1000).toFixed(1) + 's';
+  document.getElementById('r-errors').textContent = state.errors;
+  document.getElementById('r-chars').textContent  = state.currentIndex;
+  document.getElementById('r-streak').textContent = state.bestCombo;
+  document.getElementById('r-best').textContent   = overallBest + ' wpm';
+
+  const rankEl = document.getElementById('r-rank');
+  rankEl.textContent    = rank.label;
+  rankEl.style.background = rank.color + '22';
+  rankEl.style.color      = rank.color;
+  rankEl.style.border     = '1px solid ' + rank.color + '44';
+
+  document.getElementById('results-overlay').classList.add('show');
+}
+
+function closeResults() {
+  document.getElementById('results-overlay').classList.remove('show');
+}
+
+// ════════════════════════════════════════════
+// INPUT HANDLING
+// ════════════════════════════════════════════
+document.getElementById('typing-input').addEventListener('input', function() {
+  if (state.finished) return;
+  const val      = this.value;
+  const lastChar = val[val.length - 1];
+  if (!lastChar) return;
+
+  if (!state.started) {
+    state.started   = true;
+    state.startTime = Date.now();
+    state.timer     = setInterval(updateStats, 100);
+  }
+
+  const expected = state.chars[state.currentIndex]?.ch;
+  if (expected === undefined) return;
+
+  if (lastChar === expected) {
+    state.chars[state.currentIndex].wrong = false;
+    state.currentIndex++;
+    state.combo++;
+    if (state.combo > state.bestCombo) state.bestCombo = state.combo;
+    if (state.combo > 0 && state.combo % 20 === 0) showComboFlash('🔥 x' + state.combo);
+  } else {
+    state.chars[state.currentIndex].wrong = true;
+    state.currentIndex++;
+    state.errors++;
+    state.combo = 0;
+    const card = document.querySelector('.typing-card');
+    card.classList.remove('shake');
+    void card.offsetWidth;
+    card.classList.add('shake');
+  }
+
+  this.value = '';
+  updateStats();
+  renderPrompt();
+  if (state.currentIndex >= state.chars.length) finishRound();
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Tab')    { e.preventDefault(); startNewRound(); }
+  if (e.key === 'Escape') { resetRound(); closeResults(); }
+});
+
+// ════════════════════════════════════════════
+// COMBO FLASH
+// ════════════════════════════════════════════
+function showComboFlash(text) {
+  const el = document.getElementById('combo-flash');
+  el.textContent = text;
+  el.classList.remove('show');
+  void el.offsetWidth;
+  el.classList.add('show');
+}
+
+// ════════════════════════════════════════════
+// HISTORY PANEL
+// ════════════════════════════════════════════
+function switchTab(tab, btn) {
+  state.activeTab = tab;
+  document.querySelectorAll('.h-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderAttemptsList();
+}
+
+function clearHistory() {
+  if (!confirm('Clear all history? This cannot be undone.')) return;
+  state.history = [];
+  saveHistory();
+  renderHistoryPanel();
+}
+
+function renderHistoryPanel() {
+  const h = state.history;
+
+  // Count badge
+  document.getElementById('h-count').textContent = h.length;
+  document.getElementById('hs-tests').textContent = h.length;
+
+  // Summary
+  if (h.length > 0) {
+    const wpms = h.map(x => x.wpm);
+    const best = Math.max(...wpms);
+    const avg  = Math.round(wpms.reduce((a,b) => a+b, 0) / wpms.length);
+    document.getElementById('hs-best').textContent = best;
+    document.getElementById('hs-avg').textContent  = avg;
+  } else {
+    document.getElementById('hs-best').textContent = '—';
+    document.getElementById('hs-avg').textContent  = '—';
+  }
+
+  // Footer info
+  const stored = Math.round(JSON.stringify(h).length / 1024 * 10) / 10;
+  document.getElementById('h-footer-info').textContent =
+    h.length > 0 ? `${h.length} attempts · ~${stored}KB stored` : 'Saved permanently in browser';
+
+  drawSparkline();
+  renderAttemptsList();
+}
+
+function renderAttemptsList() {
+  const tab      = state.activeTab;
+  const filtered = tab === 'all'
+    ? state.history
+    : state.history.filter(h => h.mode === tab);
+
+  const list = document.getElementById('history-list');
+
+  if (filtered.length === 0) {
+    list.innerHTML = `
+      <div class="empty-history">
+        <div class="empty-icon">⌨️</div>
+        <div class="empty-title">No attempts yet</div>
+        <div class="empty-sub">${state.history.length === 0
+          ? 'Complete your first test to see your history here!'
+          : 'No attempts in this mode yet.'}</div>
+      </div>`;
+    return;
+  }
+
+  // Find per-mode bests for PB tagging
+  const modeBests = {};
+  [...state.history].reverse().forEach(h => {
+    if (!modeBests[h.mode] || h.wpm > modeBests[h.mode]) modeBests[h.mode] = h.wpm;
+  });
+
+  list.innerHTML = filtered.map((h, i) => {
+    const rank      = getRank(h.wpm);
+    const isPB      = h.wpm === modeBests[h.mode];
+    const modeColor = { quotes:'#e8ff47', code:'#6bc8ff', facts:'#6bffb8', hard:'#ff6b6b' }[h.mode] || '#888';
+    const accColor  = h.acc >= 95 ? 'var(--accent3)' : h.acc >= 80 ? 'var(--text)' : 'var(--accent2)';
+
+    return `
+    <div class="attempt-item">
+      <div class="attempt-num">#${i+1}</div>
+      <div class="attempt-body">
+        <div class="attempt-top">
+          <span class="attempt-wpm">${h.wpm}</span>
+          <span class="attempt-wpm-label">wpm</span>
+          ${isPB ? '<span class="pb-tag">PB</span>' : ''}
+        </div>
+        <div class="attempt-meta">
+          <span class="meta-chip">
+            <span class="dot" style="background:${accColor}"></span>
+            <span style="color:${accColor}">${h.acc}%</span>
+          </span>
+          <span class="meta-chip">
+            <span class="dot" style="background:var(--muted)"></span>
+            ${h.time}s
+          </span>
+          <span class="meta-chip">
+            <span class="dot" style="background:var(--accent2)"></span>
+            ${h.errors} err
+          </span>
+          <span class="meta-chip">
+            <span class="dot" style="background:${modeColor}"></span>
+            <span style="color:${modeColor}">${h.mode}</span>
+          </span>
+        </div>
+      </div>
+      <div class="attempt-right">
+        <div class="attempt-rank">${rank.label}</div>
+        <div class="attempt-date">${formatDate(h.ts)}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ════════════════════════════════════════════
+// SPARKLINE
+// ════════════════════════════════════════════
+function drawSparkline() {
+  const canvas = document.getElementById('sparkline-canvas');
+  const ctx    = canvas.getContext('2d');
+  const dpr    = window.devicePixelRatio || 1;
+  const W      = canvas.offsetWidth;
+  const H      = 56;
+  canvas.width  = W * dpr;
+  canvas.height = H * dpr;
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, W, H);
+
+  const data = [...state.history].reverse().slice(-20).map(h => h.wpm);
+
+  if (data.length < 2) {
+    ctx.font = '10px Space Mono, monospace';
+    ctx.fillStyle = 'rgba(74,74,106,0.6)';
+    ctx.textAlign = 'center';
+    ctx.fillText('complete more tests to see trend', W/2, H/2 + 4);
+    return;
+  }
+
+  const min  = Math.min(...data);
+  const max  = Math.max(...data);
+  const range = max - min || 1;
+  const pad   = { t: 8, b: 8, l: 4, r: 4 };
+  const iW    = W - pad.l - pad.r;
+  const iH    = H - pad.t - pad.b;
+
+  const pts = data.map((v, i) => ({
+    x: pad.l + (i / (data.length - 1)) * iW,
+    y: pad.t + (1 - (v - min) / range) * iH,
+  }));
+
+  // Gradient fill
+  const grad = ctx.createLinearGradient(0, pad.t, 0, H);
+  grad.addColorStop(0,   'rgba(232,255,71,0.18)');
+  grad.addColorStop(1,   'rgba(232,255,71,0)');
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, H);
+  pts.forEach(p => ctx.lineTo(p.x, p.y));
+  ctx.lineTo(pts[pts.length-1].x, H);
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // Line
+  ctx.beginPath();
+  pts.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
+  ctx.strokeStyle = 'rgba(232,255,71,0.7)';
+  ctx.lineWidth   = 2;
+  ctx.lineJoin    = 'round';
+  ctx.stroke();
+
+  // Dots on first & last
+  [pts[0], pts[pts.length-1]].forEach((p, idx) => {
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 3.5, 0, Math.PI*2);
+    ctx.fillStyle = idx === 1 ? '#e8ff47' : 'rgba(232,255,71,0.4)';
+    ctx.fill();
+  });
+}
+
+window.addEventListener('resize', drawSparkline);
+
+// ════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════
+renderHistoryPanel();
+startNewRound();
+</script>
+</body>
+</html>
