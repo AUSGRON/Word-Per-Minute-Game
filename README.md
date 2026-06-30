@@ -1,33 +1,33 @@
-# type.race ⌨️ ⚡
+# type.race ⌨️⚡
 
-A high-performance, minimalist, and aesthetically striking client-side speed typing test application. Designed for developers, enthusiasts, and modern typists who appreciate smooth interfaces, real-time telemetry metrics, and structured analytics dashboards.
+*A fast, minimalist typing speed test for people who actually care about their WPM.*
 
----
+🔴 **[Try it live](https://word-per-minute-game.vercel.app)**
 
-## ✨ Features
+Most typing tests give you one number and move on. type.race tracks everything — speed, accuracy, streaks, and how you're trending over time — and turns it into a live dashboard instead of a forgettable score.
 
-### 🎮 Game Modes & Banks
-* **Quotes:** Thought-provoking inspiration and timeless literary excerpts.
-* **Code:** Real JavaScript syntax patterns (reduces, debounces, async/await pipelines) to test engineering muscle memory.
-* **Fun Facts:** Engaging trivia across history, biology, and cosmos datasets.
-* **Hard Mode:** Long, technical vocabulary structures designed to strain cognitive pacing and precision metrics.
+## 🎮 Game Modes
 
-### 📊 Performance Analytics & Dashboarding
-* **Live Metrics Engine:** Continuous tracking of Word Per Minute (WPM), Accuracy percentage, Time-elapsed duration, and Hot Streak streaks.
-* **HTML5 Canvas Sparklines:** Dynamic vector trend visualization tracking your last 20 speed test scores natively through localized device pixel ratio (DPR) normalization grids.
-* **Historical Persistent Store:** Auto-indexed test history tracking telemetry data across runs (~KB metrics tracking engine) backed safely inside your browser's local memory parameters.
-* **Dynamic Tier Rankings:** Automated user categorization ranking performance across performance bands (`TURTLE`, `BEGINNER`, `INTERMEDIATE`, `ADVANCED`, `ELITE`, `LEGENDARY`).
+- **Quotes** — Thought-provoking lines and literary excerpts.
+- **Code** — Real JavaScript patterns (reduces, debounces, async/await chains) that build actual engineering muscle memory, not just raw typing speed.
+- **Fun Facts** — Trivia spanning history, biology, and the cosmos.
+- **Hard Mode** — Long, technical vocabulary built to test precision under pressure.
 
-### ⚡ Mechanical Experience Design
-* **Low Buffer Lag Optimization:** Text input architectures clear structural variables instantly upon processing cycles to maintain absolute baseline response accuracy.
-* **Haptic Interface Cues:** Structural UI wrapper container shifts (`shake` animations) on error detections to seamlessly prompt focus corrections.
-* **Speed Hotkeys Mapping:** Fast utility keyboard shortcuts to drop resetting latency between training loops:
-    * `TAB` $\rightarrow$ Instantly load next procedural text cluster.
-    * `ESC` $\rightarrow$ Reset existing layout buffer data streams instantly.
+## 📊 Real-Time Analytics
 
----
+- **Live Metrics** — WPM, accuracy, time, and streak, all updating as you type, not just revealed at the end.
+- **Trend Graph** — A canvas-rendered sparkline plots your last 20 runs, filterable by mode.
+- **Persistent History** — Every test is saved permanently in your browser, building toward a running Best WPM, Average WPM, and total test count.
+- **Tier Rankings** — Every run gets sorted into a performance band, from Turtle all the way up to Legendary.
 
-## 🛠️ Architecture & Core Mechanics
+## ⚡ Feel
 
-The engine depends entirely on a singular, unified state architecture model designed to keep asynchronous updates predictable and declarative.
+- **Instant Response** — Keystrokes register the moment they happen, so your score reflects your typing, not the app's lag.
+- **Error Feedback** — A quick shake on mistakes keeps you focused without breaking your rhythm.
+- **Built-In Hotkeys** — `TAB` loads the next text, `ESC` resets the run — no mouse required between attempts.
 
+## 🛠️ Under the Hood
+
+Everything runs on a single, unified state model — one source of truth that keeps async updates like input, timers, and metric calculations predictable instead of scattered across a dozen moving parts.
+
+**Built by AUSGRON** · [github.com/AUSGRON](https://github.com/AUSGRON)
